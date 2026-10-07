@@ -1,0 +1,85 @@
+/* ═══ ROXY :: responsive ═══════════════════════════════════════════ */
+
+/* laptops */
+@media (max-width:1280px) { :root { --panel-w:232px; --chat-h:214px; } }
+
+/* tablets landscape */
+@media (max-width:1080px) {
+  :root { --panel-w:206px; --chat-h:196px; }
+  .brand__sub { display:none; }
+  .btn { padding:7px 11px; font-size:.75rem; }
+}
+
+/* tablets portrait & below → panels become sheets */
+/* ═══ ROXY :: responsive (continued) ═══════════════════════════════ */
+
+/* tablets portrait & below → panels become bottom sheets */
+@media (max-width:900px) {
+    :root { --topbar-h:56px; }
+    .mobile-only { display:inline-flex; }
+    .app { padding:8px; gap:8px; grid-template-rows:var(--topbar-h) minmax(240px,1fr) auto; }
+    .layout { grid-template-columns:1fr; }
+  
+    .panel {
+      position:fixed; left:0; right:0; bottom:0; z-index:50;
+      max-height:76vh; border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+      transform:translateY(100%); transition:transform .3s var(--ease);
+      overflow-y:auto; padding-bottom:env(safe-area-inset-bottom,0);
+    }
+    .panel.mobile-open { transform:none; animation:sheet-in .3s var(--ease) both; }
+    .panel::after { /* drag affordance */
+      content:""; position:sticky; top:0; display:block; width:38px; height:3px;
+      margin:0 auto; border-radius:99px; background:var(--border-strong);
+    }
+  
+    .chat { max-height:42vh; }
+    .chat__scroll { max-height:26vh; }
+    .msg { max-width:88%; }
+    .topbar { gap:8px; padding:0 10px; overflow-x:auto; }
+    .topbar__status { margin-left:auto; }
+    #btn-settings, #btn-memory, #btn-clear { display:none; }
+    .chip-grid { grid-template-columns:repeat(3,1fr); }
+  }
+  
+  /* phones */
+  @media (max-width:620px) {
+    :root { --radius-lg:14px; }
+    .app { padding:6px; gap:6px; grid-template-rows:var(--topbar-h) minmax(210px,1fr) auto; }
+    .brand__name { font-size:.92rem; letter-spacing:.16em; }
+    .link-pill { display:none; }
+    .status-pill { padding:5px 10px; font-size:.6rem; }
+    #btn-listen-label { display:none; }
+    #btn-listen { width:40px; padding:0; }
+    .btn, .chip { min-height:38px; }            /* touch targets */
+    .chat__form { padding:9px 10px; }
+    .chat__scroll { padding:10px 11px; }
+    .msg { max-width:94%; }
+    .stage__hud { padding:10px; }
+    #visualizer { width:clamp(120px,48vw,220px); }
+    .modal { padding:0; align-items:flex-end; }
+    .modal__box { width:100%; max-height:92vh; border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+      animation:sheet-in .3s var(--ease) both; }
+    .modal__foot { padding-bottom:calc(13px + env(safe-area-inset-bottom,0)); }
+  }
+  
+  /* short/landscape phones — keep the character dominant */
+  @media (max-height:520px) and (orientation:landscape) {
+    .chat { max-height:34vh; }
+    .chat__scroll { max-height:18vh; }
+    .stage__hud { padding:6px; }
+    .hud-caption { display:none; }
+  }
+  
+  /* very wide displays */
+  @media (min-width:1800px) { :root { --panel-w:300px; --chat-h:280px; } }
+  
+  /* pointer-coarse: bigger hit areas everywhere */
+  @media (pointer:coarse) {
+    .chip { padding:10px 6px; }
+    .memory-item__del { padding:6px; }
+    .slider::-webkit-slider-thumb { width:19px; height:19px; }
+  }
+  
+  /* printing is meaningless here, but don't produce a black page */
+  @media print { .bg-layer, .panel, .topbar, .stage { display:none !important; } }
+  

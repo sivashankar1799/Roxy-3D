@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="dark light" />
+<meta name="description" content="ROXY — a futuristic 3D AI assistant that lives in your browser." />
+<title>ROXY // AI Assistant</title>
+
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="/css/main.css" />
+<link rel="stylesheet" href="/css/roxy.css" />
+<link rel="stylesheet" href="/css/animations.css" />
+<link rel="stylesheet" href="/css/responsive.css" />
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+    "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.5.5/lib/three-vrm.module.min.js"
+  }
+}
+</script>
+</head>
+
+<body>
+<div class="bg-layer">
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow--cyan" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow--violet" aria-hidden="true"></div>
+  <canvas id="bg-particles" aria-hidden="true"></canvas>
+  <div class="bg-scanline" aria-hidden="true"></div>
+</div>
+
+<div id="app" class="app" data-state="offline">
+
+  <!-- ══ TOP BAR ══════════════════════════════════════════════════ -->
+  <header class="topbar glass">
+    <div class="brand">
+      <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".5"/>
+        <circle cx="16" cy="16" r="7"  fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <circle cx="16" cy="16" r="2.4" fill="currentColor"/>
+        <path d="M16 1v5M16 26v5M1 16h5M26 16h5" stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+      <div class="brand__text">
+        <span class="brand__name">ROXY</span>
+        <span class="brand__sub" id="brand-sub">neural interface v1.0</span>
+      </div>
+    </div>
+
+    <div class="topbar__status">
+      <div id="status-pill" class="status-pill" data-status="offline">
+        <span class="status-pill__dot" aria-hidden="true"></span>
+        <span class="status-pill__label" id="status-label">OFFLINE</span>
+      </div>
+      <div id="link-pill" class="link-pill" title="Backend link state">
+        <span class="link-pill__bar"></span><span class="link-pill__bar"></span><span class="link-pill__bar"></span>
+        <span id="link-label">link…</span>
+      </div>
+    </div>
+
+    <div class="topbar__actions">
+      <button id="btn-listen" class="btn btn--primary" type="button" aria-pressed="false">
+        <span class="btn__icon" aria-hidden="true">◉</span><span id="btn-listen-label">Listening OFF</span>
+      </button>
+      <button id="btn-settings" class="btn btn--ghost" type="button" aria-haspopup="dialog">Settings</button>
+      <button id="btn-memory" class="btn btn--ghost" type="button" aria-haspopup="dialog">Memory</button>
+      <button id="btn-clear" class="btn btn--ghost" type="button">Clear Chat</button>
+      <button id="btn-panel-left" class="btn btn--icon mobile-only" type="button" aria-label="Character controls">☰</button>
+      <button id="btn-panel-right" class="btn btn--icon mobile-only" type="button" aria-label="Status panel">◫</button>
+    </div>
+  </header>
+
+  <!-- ══ MAIN STAGE ═══════════════════════════════════════════════ -->
+  <main class="layout">
+
+    <!-- Left: character control -->
+    <aside id="panel-left" class="panel glass" aria-label="Character control panel">
+      <header class="panel__head">
+        <h2 class="panel__title">Character Control</h2>
+        <button class="panel__close mobile-only" data-close-panel="left" type="button" aria-label="Close">✕</button>
+      </header>
+
+      <section class="panel__section">
+        <h3 class="panel__label">Expression</h3>
+        <div class="chip-grid" id="expression-buttons">
+          <button class="chip is-active" data-expression="neutral" type="button">Neutral</button>
+          <button class="chip" data-expression="happy" type="button">Happy</button>
+          <button class="chip" data-expression="sad" type="button">Sad</button>
+          <button class="chip" data-expression="surprised" type="button">Surprised</button>
+          <button class="chip" data-expression="confused" type="button">Confused</button>
+          <button class="chip" data-expression="thinking" type="button">Thinking</button>
+        </div>
+      </section>
+
+      <section class="panel__section">
+        <h3 class="panel__label">Animation</h3>
+        <div class="chip-grid" id="animation-buttons">
+          <button class="chip is-active" data-animation="idle" type="button">Idle</button>
+          <button class="chip" data-animation="wave" type="button">Wave</button>
+          <button class="chip" data-animation="greeting" type="button">Greeting</button>
+          <button class="chip" data-animation="thinking" type="button">Thinking</button>
+          <button class="chip" data-animation="talking" type="button">Talking</button>
+          <button class="chip" data-animation="listening" type="button">Listening</button>
+        </div>
+      </section>
+
+      <section class="panel__section">
+        <h3 class="panel__label">Head rotation</h3>
+        <div class="slider-row">
+          <span class="slider-row__cap">L</span>
+          <input id="slider-head" class="slider" type="range" min="-45" max="45" value="0" step="1"
+                 aria-label="Head rotation" />
+          <span class="slider-row__cap">R</span>
+        </div>
+        <output class="slider-value" id="slider-head-value">0°</output>
+      </section>
+
+      <section class="panel__section">
+        <h3 class="panel__label">Camera zoom</h3>
+        <div class="slider-row">
+          <span class="slider-row__cap">−</span>
+          <input id="slider-zoom" class="slider" type="range" min="0" max="100" value="50" step="1"
+                 aria-label="Camera zoom" />
+          <span class="slider-row__cap">+</span>
+        </div>
+        <div style="display:flex;justify-content:center;gap:8px;align-items:center"><output class="slider-value" id="slider-zoom-value">22%</output><button id="btn-zoom-reset" class="btn btn--ghost btn--sm" type="button">Fit</button></div>
+      </section>
+
+      <section class="panel__section">
+        <h3 class="panel__label">Character rotation</h3>
+        <div class="rotate-row">
+          <button id="btn-rot-left" class="btn btn--icon" type="button" aria-label="Rotate left">←</button>
+          <button id="btn-rot-reset" class="btn btn--ghost btn--sm" type="button">Reset view</button>
+          <button id="btn-rot-right" class="btn btn--icon" type="button" aria-label="Rotate right">→</button>
+        </div>
+        <label class="switch">
+          <input id="toggle-follow" type="checkbox" checked />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+          <span class="switch__text">Look toward you</span>
+        </label>
+        <label class="switch">
+          <input id="toggle-autorotate" type="checkbox" />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+          <span class="switch__text">Turntable</span>
+        </label>
+      </section>
+    </aside>
+
+    <!-- Center: 3D stage -->
+    <section class="stage" aria-label="ROXY 3D viewport">
+      <canvas id="roxy-canvas"></canvas>
+
+      <div class="stage__frame" aria-hidden="true">
+        <span class="corner corner--tl"></span><span class="corner corner--tr"></span>
+        <span class="corner corner--bl"></span><span class="corner corner--br"></span>
+      </div>
+
+      <div id="stage-loader" class="stage-loader">
+        <div class="stage-loader__ring" aria-hidden="true"></div>
+        <p class="stage-loader__text" id="stage-loader-text">Initialising neural interface…</p>
+        <div class="stage-loader__bar"><span id="stage-loader-fill"></span></div>
+      </div>
+
+      <div id="model-error" class="stage-notice" hidden role="alert">
+        <strong>3D model unavailable</strong>
+        <p id="model-error-text">
+          No VRM character found at <code>assets/models/roxy.vrm</code>.
+          ROXY is running with the holographic core avatar.
+        </p>
+        <a class="btn btn--ghost btn--sm" href="https://vroid.com/en/studio" target="_blank" rel="noreferrer noopener">Get a VRM model</a>
+      </div>
+
+      <div class="stage__hud">
+        <div class="hud-caption" id="hud-caption" aria-live="polite"></div>
+        <div class="visualizer" id="visualizer-wrap">
+          <span class="visualizer__icon" id="visualizer-icon">🎙</span>
+          <canvas id="visualizer" height="48" aria-hidden="true"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right: status -->
+    <aside id="panel-right" class="panel glass" aria-label="ROXY status">
+      <header class="panel__head">
+        <h2 class="panel__title">System Status</h2>
+        <button class="panel__close mobile-only" data-close-panel="right" type="button" aria-label="Close">✕</button>
+      </header>
+
+      <section class="panel__section">
+        <div class="stat"><span class="stat__key">State</span><span class="stat__val" id="stat-state">Offline</span></div>
+        <div class="stat"><span class="stat__key">Microphone</span><span class="stat__val" id="stat-mic">Off</span></div>
+        <div class="stat"><span class="stat__key">Wake word</span><span class="stat__val" id="stat-wake">hey roxy</span></div>
+        <div class="stat"><span class="stat__key">Emotion</span><span class="stat__val" id="stat-emotion">neutral</span></div>
+        <div class="stat"><span class="stat__key">Animation</span><span class="stat__val" id="stat-animation">idle</span></div>
+      </section>
+
+      <section class="panel__section">
+        <h3 class="panel__label">AI link</h3>
+        <div class="stat"><span class="stat__key">Connection</span><span class="stat__val" id="stat-conn">Disconnected</span></div>
+        <div class="stat"><span class="stat__key">Provider</span><span class="stat__val" id="stat-provider">—</span></div>
+        <div class="stat"><span class="stat__key">Model</span><span class="stat__val" id="stat-model">—</span></div>
+        <div class="stat"><span class="stat__key">Latency</span><span class="stat__val" id="stat-latency">—</span></div>
+      </section>
+
+      <section class="panel__section">
+        <h3 class="panel__label">Renderer</h3>
+        <div class="stat"><span class="stat__key">FPS</span><span class="stat__val" id="stat-fps">—</span></div>
+        <div class="stat"><span class="stat__key">Avatar</span><span class="stat__val" id="stat-avatar">loading</span></div>
+        <div class="stat"><span class="stat__key">Speech API</span><span class="stat__val" id="stat-speech">checking</span></div>
+      </section>
+
+      <section class="panel__section panel__section--grow">
+        <h3 class="panel__label">Event log</h3>
+        <ul class="eventlog" id="eventlog" aria-live="polite"></ul>
+      </section>
+    </aside>
+  </main>
+
+  <!-- ══ CHAT DOCK ════════════════════════════════════════════════ -->
+  <section class="chat glass" aria-label="Conversation">
+    <header class="chat__head">
+      <h2 class="chat__title">Conversation</h2>
+      <div class="chat__meta"><span id="chat-count">0 messages</span></div>
+    </header>
+
+    <div class="chat__scroll" id="chat-scroll" role="log" aria-live="polite">
+      <div class="chat__empty" id="chat-empty">
+        <p>Say <strong id="empty-wake">“Hey Roxy”</strong> or type below to begin.</p>
+      </div>
+    </div>
+
+    <form class="chat__form" id="chat-form" autocomplete="off">
+      <input id="chat-input" class="chat__input" type="text" maxlength="2000"
+             placeholder="Talk to ROXY…" aria-label="Message to ROXY" />
+      <button id="btn-mic-push" class="btn btn--icon" type="button" title="Push to talk" aria-label="Push to talk">🎙</button>
+      <button class="btn btn--primary" type="submit">Send</button>
+    </form>
+  </section>
+</div>
+
+<!-- ══ SETTINGS MODAL ═════════════════════════════════════════════ -->
+<div class="modal" id="settings-modal" hidden role="dialog" aria-modal="true" aria-labelledby="settings-title">
+  <div class="modal__backdrop" data-close-modal></div>
+  <div class="modal__box glass">
+    <header class="modal__head">
+      <h2 id="settings-title" class="modal__title">Settings</h2>
+      <button class="btn btn--icon" data-close-modal type="button" aria-label="Close settings">✕</button>
+    </header>
+
+    <div class="modal__body">
+      <section class="field-group">
+        <h3 class="panel__label">Voice input</h3>
+        <label class="field">
+          <span class="field__label">Wake word</span>
+          <input id="set-wakeword" class="field__input" type="text" maxlength="40" placeholder="hey roxy" />
+        </label>
+        <label class="switch">
+          <input id="set-wake-enabled" type="checkbox" checked />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+          <span class="switch__text">Wake-word detection</span>
+        </label>
+        <label class="switch">
+          <input id="set-continuous" type="checkbox" checked />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+          <span class="switch__text">Return to listening after replying</span>
+        </label>
+      </section>
+
+      <section class="field-group">
+        <h3 class="panel__label">Voice output</h3>
+        <label class="field">
+          <span class="field__label">Voice</span>
+          <select id="set-voice" class="field__input"></select>
+        </label>
+        <label class="field">
+          <span class="field__label">Speed <output id="set-rate-val">1.00×</output></span>
+          <input id="set-rate" class="slider" type="range" min="0.5" max="2" step="0.05" value="1" />
+        </label>
+        <label class="field">
+          <span class="field__label">Pitch <output id="set-pitch-val">1.05</output></span>
+          <input id="set-pitch" class="slider" type="range" min="0.5" max="2" step="0.05" value="1.05" />
+        </label>
+        <label class="field">
+          <span class="field__label">Volume <output id="set-volume-val">100%</output></span>
+          <input id="set-volume" class="slider" type="range" min="0" max="1" step="0.05" value="1" />
+        </label>
+        <label class="switch">
+          <input id="set-autospeak" type="checkbox" checked />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+          <span class="switch__text">Auto-speak responses</span>
+        </label>
+        <button id="btn-test-voice" class="btn btn--ghost btn--sm" type="button">Test voice</button>
+      </section>
+
+      <section class="field-group">
+        <h3 class="panel__label">Intelligence</h3>
+        <label class="field">
+          <span class="field__label">AI provider</span>
+          <select id="set-provider" class="field__input"></select>
+        </label>
+        <p class="field__hint">
+          Providers and models are configured server-side in <code>backend/.env</code>.
+          API keys never reach the browser.
+        </p>
+      </section>
+
+      <section class="field-group">
+        <h3 class="panel__label">Presentation</h3>
+        <label class="field">
+          <span class="field__label">Animation intensity <output id="set-intensity-val">100%</output></span>
+          <input id="set-intensity" class="slider" type="range" min="0" max="1.5" step="0.05" value="1" />
+        </label>
+        <label class="field">
+          <span class="field__label">Theme</span>
+          <select id="set-theme" class="field__input">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="system">Follow system</option>
+          </select>
+        </label>
+        <label class="switch">
+          <input id="set-reduced" type="checkbox" />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+          <span class="switch__text">Reduced motion</span>
+        </label>
+        <label class="switch">
+          <input id="set-particles" type="checkbox" checked />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+          <span class="switch__text">Background particles</span>
+        </label>
+        <label class="switch">
+          <input id="set-debug" type="checkbox" />
+          <span class="switch__track"><span class="switch__thumb"></span></span>
+          <span class="switch__text">Debug mode</span>
+        </label>
+      </section>
+    </div>
+
+    <footer class="modal__foot">
+      <button id="btn-reset-settings" class="btn btn--ghost" type="button">Reset to defaults</button>
+      <button class="btn btn--primary" data-close-modal type="button">Done</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ══ MEMORY MODAL ═══════════════════════════════════════════════ -->
+<div class="modal" id="memory-modal" hidden role="dialog" aria-modal="true" aria-labelledby="memory-title">
+  <div class="modal__backdrop" data-close-modal></div>
+  <div class="modal__box glass">
+    <header class="modal__head">
+      <h2 id="memory-title" class="modal__title">Memory</h2>
+      <button class="btn btn--icon" data-close-modal type="button" aria-label="Close memory">✕</button>
+    </header>
+    <div class="modal__body">
+      <p class="field__hint">
+        Facts ROXY has kept about you. Say “Remember that …”, “Forget that …”,
+        or “What do you remember about me?” in conversation.
+      </p>
+      <ul class="memory-list" id="memory-list"></ul>
+    </div>
+    <footer class="modal__foot">
+      <button id="btn-memory-refresh" class="btn btn--ghost" type="button">Refresh</button>
+      <button id="btn-memory-clear" class="btn btn--danger" type="button">Clear all</button>
+    </footer>
+  </div>
+</div>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<noscript>
+  <div class="noscript">ROXY requires JavaScript to run.</div>
+</noscript>
+
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>

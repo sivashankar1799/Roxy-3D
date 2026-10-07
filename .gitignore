@@ -1,0 +1,26 @@
+# Secrets
+.env
+backend/.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# Node / editor / OS
+node_modules/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Runtime data
+*.sqlite3
+*.db
+data/
+backend/data/
+
+# Large animation assets
+frontend/assets/models/*.vrma
